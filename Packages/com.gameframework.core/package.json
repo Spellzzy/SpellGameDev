@@ -1,0 +1,19 @@
+{
+  "name": "com.gameframework.core",
+  "version": "0.1.0",
+  "displayName": "Game Framework Core",
+  "description": "通用游戏框架核心模块：单例、事件系统、FSM、UI管理、资源加载、对象池、音频、存档、配置、输入、日志、调试工具。",
+  "unity": "2021.3",
+  "author": {
+    "name": "GameDev"
+  },
+  "keywords": [
+    "game",
+    "framework",
+    "singleton",
+    "event",
+    "fsm",
+    "ui",
+    "pool"
+  ]
+}

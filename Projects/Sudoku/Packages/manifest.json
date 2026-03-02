@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "com.gameframework.core": "file:../../../Packages/com.gameframework.core"
+  }
+}

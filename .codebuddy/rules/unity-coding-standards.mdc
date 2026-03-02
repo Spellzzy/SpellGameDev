@@ -1,0 +1,119 @@
+---
+description: 
+alwaysApply: true
+enabled: true
+updatedAt: 2026-03-02T14:10:56.965Z
+provider: 
+---
+
+# Unity C# 编码规范
+
+在编写 Unity C# 代码时，必须遵循以下规范。
+
+## 命名规范
+
+```
+类/结构体/枚举    PascalCase          PlayerController, ItemData
+公开方法/属性     PascalCase          GetHealth(), MaxHp
+私有字段          _camelCase          _currentHp, _moveSpeed
+局部变量/参数     camelCase           itemCount, targetPos
+常量              UPPER_SNAKE_CASE    MAX_LEVEL, DEFAULT_SPEED
+接口              I + PascalCase      IState, IDamageable
+枚举值            PascalCase          ItemType.Weapon
+事件名            字符串常量+分类     "Player.Die", "UI.Open"
+```
+
+## 架构分层
+
+```
+┌─────────────────────────────┐
+│       表现层 (View/UI)       │  MonoBehaviour, UI面板, 特效, 动画
+├─────────────────────────────┤
+│       逻辑层 (Manager)       │  纯C#单例或MonoSingleton, 核心逻辑
+├─────────────────────────────┤
+│       数据层 (Data/Model)    │  纯C#类/struct, ScriptableObject, JSON配置
+└─────────────────────────────┘
+```
+
+**规则**：
+- 上层可以调用下层，下层不可以引用上层
+- 同层之间通过 EventSystem 通信，禁止直接引用
+- MonoBehaviour 只做"驱动"和"表现"，核心逻辑放纯C#类中
+
+## 工作空间结构
+
+```
+Workspace/                              # 工作空间根目录
+├── .codebuddy/rules/                   # AI 工作流规则（跨项目共用）
+├── Workflow/Prompts/                   # Prompt 模板库（跨项目共用）
+├── Packages/                           # 共用框架（UPM 本地包）
+│   └── com.gameframework.core/        # GameFramework 包
+│       ├── package.json
+│       ├── Runtime/                    # 运行时代码
+│       │   ├── Core/                   # Singleton, MonoSingleton, GameManager
+│       │   ├── Event/                  # EventSystem
+│       │   ├── FSM/                    # 状态机
+│       │   ├── UI/                     # UIManager, UIPanel基类
+│       │   ├── Resource/              # 资源加载抽象
+│       │   ├── Pool/                   # 对象池
+│       │   ├── Audio/                  # 音频管理
+│       │   ├── Config/                 # 配置加载
+│       │   ├── Save/                   # 存档系统
+│       │   ├── Input/                  # 输入管理
+│       │   ├── Log/                    # 日志系统
+│       │   ├── Debug/                  # 调试工具
+│       │   └── Utils/                  # 工具类/扩展方法
+│       └── Editor/                     # 框架编辑器扩展
+└── Projects/                           # 各游戏项目
+    └── <ProjectName>/                  # 单个 Unity 项目
+        ├── Assets/
+        │   ├── Scripts/                # 业务代码（按功能模块分子目录）
+        │   ├── Configs/                # 业务配置 JSON/SO
+        │   ├── Prefabs/                # 预制体
+        │   ├── Scenes/                 # 场景
+        │   ├── Art/                    # 美术资源
+        │   ├── Audio/                  # 音频资源
+        │   └── Resources/              # 需要 Resources.Load 的资源
+        └── Packages/
+            └── manifest.json           # 引用框架包: "com.gameframework.core": "file:../../../Packages/com.gameframework.core"
+```
+
+**新建项目时**：在 `Projects/` 下创建新目录，`manifest.json` 中引用共用框架包即可。
+
+## 代码模板
+
+每个新功能模块遵循 **Manager + Data + View** 三件套：
+
+```csharp
+// 1. Data — 纯数据定义
+[Serializable]
+public class XxxData
+{
+    public int id;
+    public string name;
+}
+
+// 2. Manager — 业务逻辑
+public class XxxManager : Singleton<XxxManager>
+{
+    // 对外只暴露必要的 public 方法
+    // 内部状态变化通过 EventSystem 广播
+}
+
+// 3. View — 表现层（MonoBehaviour）
+public class XxxView : MonoBehaviour
+{
+    // 监听事件刷新显示
+    // 不持有业务数据，只读取 Manager 的状态
+}
+```
+
+## 必须遵守
+
+1. 每个 public 类、方法、属性都要有 `/// <summary>` XML 注释
+2. 禁止在 Update 中 new 对象（GC Alloc）
+3. 字符串拼接用 `$""` 插值或 StringBuilder，不用 `+`
+4. 集合遍历中不修改集合，需要修改先复制
+5. 魔数必须提取为常量或配置
+6. 单个方法不超过 40 行，超过就拆分
+7. 单个文件不超过 300 行，超过就分拆模块
