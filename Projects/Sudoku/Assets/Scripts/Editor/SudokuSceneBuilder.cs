@@ -277,6 +277,7 @@ namespace Sudoku.Editor
             boardArea.anchoredPosition = new Vector2(0, 80);
             var boardBG = boardArea.gameObject.AddComponent<Image>();
             boardBG.color = new Color(0.3f, 0.3f, 0.3f, 1f);
+            boardBG.raycastTarget = false;
 
             // 棋盘格子容器
             var boardRoot = CreateUIObject(boardArea, "BoardRoot");

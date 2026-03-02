@@ -15,11 +15,25 @@ namespace Sudoku.UI
         [SerializeField] private Text _errorsText;
         [SerializeField] private Text _hintsText;
 
-        private void Start()
+        private void OnEnable()
         {
             EventSystem.Instance.Subscribe(SudokuEvents.BOARD_CREATED, OnRefresh);
             EventSystem.Instance.Subscribe(SudokuEvents.CELL_VALUE_CHANGED, OnRefresh);
             EventSystem.Instance.Subscribe(SudokuEvents.HINT_USED, OnRefresh);
+
+            // 面板激活时如果已有棋盘数据，立即刷新
+            if (SudokuManager.Instance.Board != null)
+            {
+                OnRefresh(null);
+            }
+        }
+
+        private void OnDisable()
+        {
+            if (!EventSystem.HasInstance) return;
+            EventSystem.Instance.Unsubscribe(SudokuEvents.BOARD_CREATED, OnRefresh);
+            EventSystem.Instance.Unsubscribe(SudokuEvents.CELL_VALUE_CHANGED, OnRefresh);
+            EventSystem.Instance.Unsubscribe(SudokuEvents.HINT_USED, OnRefresh);
         }
 
         private void OnRefresh(object sender)
@@ -48,10 +62,7 @@ namespace Sudoku.UI
 
         private void OnDestroy()
         {
-            if (!EventSystem.HasInstance) return;
-            EventSystem.Instance.Unsubscribe(SudokuEvents.BOARD_CREATED, OnRefresh);
-            EventSystem.Instance.Unsubscribe(SudokuEvents.CELL_VALUE_CHANGED, OnRefresh);
-            EventSystem.Instance.Unsubscribe(SudokuEvents.HINT_USED, OnRefresh);
+            // OnDisable 已处理取消订阅
         }
     }
 }

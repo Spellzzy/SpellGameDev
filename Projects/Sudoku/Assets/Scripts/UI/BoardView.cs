@@ -27,9 +27,21 @@ namespace Sudoku.UI
         private CellView[,] _cells;
         private const int SIZE = SudokuBoardData.SIZE;
 
-        private void Start()
+        private void OnEnable()
         {
             SubscribeEvents();
+
+            // 面板激活时，如果已有棋盘数据（事件可能在面板隐藏时已发出），立即创建
+            if (SudokuManager.Instance.Board != null)
+            {
+                CreateBoard();
+                RefreshAll();
+            }
+        }
+
+        private void OnDisable()
+        {
+            UnsubscribeEvents();
         }
 
         /// <summary>
@@ -179,7 +191,7 @@ namespace Sudoku.UI
 
         private void OnDestroy()
         {
-            UnsubscribeEvents();
+            // OnDisable 已处理取消订阅
         }
     }
 }
