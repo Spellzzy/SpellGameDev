@@ -186,7 +186,7 @@ namespace GameFramework.Debug
             GUILayout.BeginHorizontal();
             _inputText = GUILayout.TextField(_inputText, GUILayout.ExpandWidth(true));
             if (GUILayout.Button("Execute", GUILayout.Width(80)) ||
-                (Event.current.isKey && Event.current.keyCode == KeyCode.Return))
+                (UnityEngine.Event.current.isKey && UnityEngine.Event.current.keyCode == KeyCode.Return))
             {
                 ExecuteCommand(_inputText);
                 _inputText = "";

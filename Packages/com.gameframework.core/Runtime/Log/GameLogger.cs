@@ -1,7 +1,6 @@
 using System;
 using System.Diagnostics;
 using UnityEngine;
-using Debug = UnityEngine.Debug;
 
 namespace GameFramework.Log
 {
@@ -54,7 +53,7 @@ namespace GameFramework.Log
         {
             if (CurrentLevel <= LogLevel.Debug)
             {
-                Debug.Log(Format(tag, message));
+                UnityEngine.Debug.Log(Format(tag, message));
             }
         }
 
@@ -66,7 +65,7 @@ namespace GameFramework.Log
         {
             if (CurrentLevel <= LogLevel.Info)
             {
-                Debug.Log(Format(tag, message));
+                UnityEngine.Debug.Log(Format(tag, message));
             }
         }
 
@@ -77,7 +76,7 @@ namespace GameFramework.Log
         {
             if (CurrentLevel <= LogLevel.Warning)
             {
-                Debug.LogWarning(Format(tag, message));
+                UnityEngine.Debug.LogWarning(Format(tag, message));
             }
         }
 
@@ -88,7 +87,7 @@ namespace GameFramework.Log
         {
             if (CurrentLevel <= LogLevel.Error)
             {
-                Debug.LogError(Format(tag, message));
+                UnityEngine.Debug.LogError(Format(tag, message));
             }
         }
 
@@ -99,7 +98,7 @@ namespace GameFramework.Log
         {
             if (CurrentLevel <= LogLevel.Error)
             {
-                Debug.LogError(Format(tag, $"Exception: {exception.Message}\n{exception.StackTrace}"));
+                UnityEngine.Debug.LogError(Format(tag, $"Exception: {exception.Message}\n{exception.StackTrace}"));
             }
         }
     }

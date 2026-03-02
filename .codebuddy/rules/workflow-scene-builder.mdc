@@ -1,0 +1,182 @@
+---
+description: Editor 场景搭建阶段的执行规则。当用户需要搭建游戏场景、创建 UI 结构、生成预制体时触发。
+alwaysApply: false
+enabled: true
+updatedAt: 2026-03-02T15:31:21.646Z
+provider: 
+---
+
+# Editor 场景搭建规则
+
+当用户需要搭建游戏场景、创建 UI 结构、生成预制体时执行。
+
+## 触发关键词
+"搭建场景"、"创建场景"、"生成UI"、"创建Canvas"、"生成预制体"、"搭建UI"、"场景结构"
+
+## 核心原则
+
+**绝不手动拖拽** — 所有场景结构、预制体、SerializeField 绑定都通过 Editor 脚本自动完成。
+
+## 执行 SOP
+
+### Step 1: 分析 View 脚本（必做）
+
+在编写 Editor 脚本前，必须先全面分析所有 View 脚本：
+
+1. **读取所有 View 脚本**，提取每个文件中：
+   - 所有 `[SerializeField]` 字段（类型 + 名称）
+   - `Awake/Start/OnInit` 中通过 `transform.Find` / `GetChild` 查找的路径
+   - 按钮事件绑定（`onClick.AddListener`）
+   - 隐含的布局需求（GridLayoutGroup / VerticalLayoutGroup 等）
+
+2. **设计 Hierarchy 结构**，输出完整的场景树形图：
+   ```
+   Scene Root
+   ├── [GameEntry]           — 入口脚本
+   ├── Canvas
+   │   ├── MenuPanel         — MainMenuView
+   │   ├── GamePanel         — 游戏主面板
+   │   │   ├── TopBar        — 信息栏
+   │   │   ├── BoardArea     — 棋盘/游戏区
+   │   │   └── NumberPad     — 输入区
+   │   ├── PopupPanel        — 弹窗（默认隐藏）
+   │   └── ...
+   ```
+
+3. **确认后再写代码**（如果结构复杂）
+
+### Step 2: 编写 Editor 脚本
+
+脚本结构模板：
+
+```csharp
+#if UNITY_EDITOR
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.UI;
+using UnityEngine.EventSystems;
+
+namespace ProjectName.Editor
+{
+    public static class XxxSceneBuilder
+    {
+        [MenuItem("GameName/Build Scene", false, 1)]
+        public static void BuildScene()
+        {
+            // 0. 确认对话框
+            if (!EditorUtility.DisplayDialog(...)) return;
+
+            // 1. 清空场景
+            ClearScene();
+
+            // 2. 基础设施
+            CreateCamera();
+            CreateEventSystem();
+            CreateGameEntry();
+
+            // 3. Canvas
+            var canvas = CreateMainCanvas();
+
+            // 4. 各面板
+            var menuPanel = CreateMenuPanel(canvas);
+            var gamePanel = CreateGamePanel(canvas);
+            // ...
+
+            // 5. 预制体
+            var cellPrefab = CreateCellPrefab();
+
+            // 6. 绑定 SerializeField
+            BindXxxView(panel, prefab);
+
+            // 7. 初始状态
+            menuPanel.SetActive(true);
+            gamePanel.SetActive(false);
+
+            // 8. 标记脏
+            EditorSceneManager.MarkSceneDirty(...);
+        }
+    }
+}
+#endif
+```
+
+### Step 3: SerializeField 绑定规范
+
+**必须使用 SerializedObject**，而非反射：
+
+```csharp
+private static void BindXxxView(GameObject panel, GameObject prefab)
+{
+    var view = panel.GetComponent<XxxView>();
+    var so = new SerializedObject(view);
+
+    // 单个引用
+    so.FindProperty("_fieldName").objectReferenceValue = targetObject;
+
+    // 数组引用
+    var arrayProp = so.FindProperty("_arrayField");
+    arrayProp.arraySize = count;
+    for (int i = 0; i < count; i++)
+    {
+        arrayProp.GetArrayElementAtIndex(i).objectReferenceValue = items[i];
+    }
+
+    so.ApplyModifiedPropertiesWithoutUndo();
+}
+```
+
+### Step 4: 预制体生成规范
+
+```csharp
+private static GameObject CreateXxxPrefab()
+{
+    // 1. 在场景中创建临时 GameObject
+    var go = new GameObject("XxxPrefab");
+    // ... 添加组件、子对象
+
+    // 2. 绑定 SerializeField
+    var view = go.AddComponent<XxxView>();
+    var so = new SerializedObject(view);
+    // ... 绑定引用
+    so.ApplyModifiedPropertiesWithoutUndo();
+
+    // 3. 保存为预制体
+    string dir = "Assets/Prefabs/Xxx";
+    if (!AssetDatabase.IsValidFolder(dir))
+        AssetDatabase.CreateFolder("Assets/Prefabs", "Xxx");
+    var prefab = PrefabUtility.SaveAsPrefabAsset(go, $"{dir}/XxxPrefab.prefab");
+
+    // 4. 销毁临时对象
+    Object.DestroyImmediate(go);
+    return prefab;
+}
+```
+
+## 必须遵守
+
+1. Editor 脚本放 `Scripts/Editor/` 目录，配独立 `*.Editor.asmdef`（仅 Editor 平台）
+2. 整个文件用 `#if UNITY_EDITOR` 包裹
+3. 命名空间：`{ProjectName}.Editor`
+4. `UnityEngine.Debug` / `UnityEngine.Event` 等与框架命名空间冲突的类型，必须用完全限定名
+5. 关键操作前用 `EditorUtility.DisplayDialog` 确认
+6. 完成后调用 `EditorSceneManager.MarkSceneDirty` 提示用户保存
+7. 预制体保存后必须 `DestroyImmediate` 临时对象
+8. 使用 `Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf")` 获取默认字体
+9. Canvas 统一配置：`ScreenSpaceOverlay` + `CanvasScaler(ScaleWithScreenSize)`
+10. 提供独立的预制体生成菜单项（用户可能只想重建预制体不重建场景）
+
+## 参考实现
+
+- `Projects/Sudoku/Assets/Scripts/Editor/SudokuSceneBuilder.cs` — 完整的数独场景搭建脚本
+- `Projects/Sudoku/Assets/Scripts/Editor/Sudoku.Editor.asmdef` — Editor 程序集定义
+
+## 常见问题
+
+| 问题 | 解决方案 |
+|------|----------|
+| `Debug` 解析为 `GameFramework.Debug` | 用 `UnityEngine.Debug` 完全限定名 |
+| `Event` 解析为 `GameFramework.Event` | 用 `UnityEngine.Event` 完全限定名 |
+| SerializeField 绑定失败 | 确认属性名与代码中字段名一致（不含 `_` 前缀由 Unity 自动处理） |
+| 预制体中组件引用丢失 | 在 `SaveAsPrefabAsset` 前完成所有绑定 |
+| Font 为 null | 使用 `Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf")` |

@@ -108,6 +108,56 @@ public class XxxView : MonoBehaviour
 }
 ```
 
+## Editor 脚本规范
+
+当需要创建场景结构、预制体、批量资源时，通过 **Editor 脚本**实现，而非手动操作。
+
+### 适用场景
+- 搭建完整游戏场景（Canvas、面板、UI 元素层级）
+- 生成预制体（Cell、Item、Card 等可复用组件）
+- 批量创建/修改资源
+- 自动绑定 SerializeField 引用
+
+### Editor 脚本模板
+
+```csharp
+#if UNITY_EDITOR
+using UnityEditor;
+using UnityEngine;
+using UnityEngine.UI;
+
+namespace MyGame.Editor
+{
+    public static class XxxSceneBuilder
+    {
+        [MenuItem("MyGame/Build Scene", false, 1)]
+        public static void BuildScene()
+        {
+            // 1. 确认对话框
+            // 2. 清空/准备场景
+            // 3. 创建基础设施（Camera + EventSystem + 入口）
+            // 4. 创建 Canvas
+            // 5. 创建各面板
+            // 6. 创建预制体
+            // 7. 绑定 SerializeField（通过 SerializedObject）
+            // 8. 设置初始状态
+            // 9. 标记场景脏
+        }
+    }
+}
+#endif
+```
+
+### 必须遵守
+1. 文件放在 `Scripts/Editor/` 目录，配独立的 `*.Editor.asmdef`（仅 Editor 平台）
+2. 用 `#if UNITY_EDITOR` 包裹整个文件
+3. 通过 `SerializedObject` + `FindProperty` 绑定 `[SerializeField]` 字段，不用反射
+4. 预制体通过 `PrefabUtility.SaveAsPrefabAsset` 保存后，销毁场景中的临时对象
+5. 使用 `EditorUtility.DisplayDialog` 做关键操作确认
+6. 完成后调用 `EditorSceneManager.MarkSceneDirty` 提示保存
+7. 命名空间：`{ProjectName}.Editor`
+8. 裸 `Debug` / `Event` 等与框架命名空间冲突的类型，必须用 `UnityEngine.Debug` / `UnityEngine.Event` 完全限定名
+
 ## 必须遵守
 
 1. 每个 public 类、方法、属性都要有 `/// <summary>` XML 注释

@@ -24,7 +24,7 @@ namespace GameFramework.Core
             {
                 if (_applicationIsQuitting)
                 {
-                    Debug.LogWarning($"[MonoSingleton] '{typeof(T)}' already destroyed on application quit. Returning null.");
+                    UnityEngine.Debug.LogWarning($"[MonoSingleton] '{typeof(T)}' already destroyed on application quit. Returning null.");
                     return null;
                 }
 
@@ -61,7 +61,7 @@ namespace GameFramework.Core
             }
             else if (_instance != this)
             {
-                Debug.LogWarning($"[MonoSingleton] Duplicate '{typeof(T)}' detected. Destroying...");
+                UnityEngine.Debug.LogWarning($"[MonoSingleton] Duplicate '{typeof(T)}' detected. Destroying...");
                 Destroy(gameObject);
             }
         }
