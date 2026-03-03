@@ -1,7 +1,7 @@
 // ============================================================================
 // 微信小游戏键值存储实现（预留）
 // 导入微信 Unity SDK 后，添加 WEIXINMINIGAME 条件编译符号即可激活。
-// SDK 地址：https://github.com/niccolli/niccolli-minigame-unity-sdk
+// SDK 地址：https://github.com/wechat-miniprogram/minigame-tuanjie-transform-sdk
 // ============================================================================
 
 #if WEIXINMINIGAME

@@ -1,8 +1,15 @@
+using System;
 using GameFramework.Core;
 using GameFramework.Log;
 
 namespace GameFramework.Platform
 {
+    /// <summary>
+    /// 平台工厂委托。
+    /// 由各平台程序集注册，用于创建平台实现而不产生直接引用依赖。
+    /// </summary>
+    public delegate void PlatformFactoryDelegate(PlatformManager manager);
+
     /// <summary>
     /// 平台管理器。
     /// 统一管理跨平台实现的注册和获取。
@@ -10,8 +17,13 @@ namespace GameFramework.Platform
     /// 
     /// 使用方式：
     /// 1. 自动检测：默认根据编译符号自动选择平台实现
-    /// 2. 手动指定：调用 Initialize(PlatformType) 强制切换
-    /// 3. 自定义实现：调用 SetXxx() 方法注入自定义实现
+    /// 2. 注册工厂：各平台程序集通过 RegisterFactory 注册创建逻辑
+    /// 3. 手动指定：调用 SetXxx() 方法注入自定义实现
+    /// 
+    /// 架构说明：
+    /// WX 等平台实现位于独立程序集（带 defineConstraints），
+    /// 通过 [RuntimeInitializeOnLoadMethod] 自动注册工厂到 PlatformManager，
+    /// 避免 GameFramework.Runtime 直接引用平台 SDK 程序集。
     /// </summary>
     public class PlatformManager : Singleton<PlatformManager>
     {
@@ -21,6 +33,8 @@ namespace GameFramework.Platform
         private IPlatformFileSystem _fileSystem;
         private IPlatformAudio _audio;
         private PlatformType _currentPlatform;
+
+        private static PlatformFactoryDelegate _registeredFactory;
 
         /// <summary>
         /// 当前平台类型
@@ -47,9 +61,21 @@ namespace GameFramework.Platform
         /// </summary>
         public bool IsWXMiniGame => _currentPlatform == PlatformType.WXMiniGame;
 
+        /// <summary>
+        /// 注册平台工厂。
+        /// 各平台程序集在 [RuntimeInitializeOnLoadMethod] 中调用此方法。
+        /// </summary>
+        /// <param name="factory">平台创建委托</param>
+        public static void RegisterFactory(PlatformFactoryDelegate factory)
+        {
+            _registeredFactory = factory;
+        }
+
+        /// <summary>
+        /// 初始化时自动检测平台
+        /// </summary>
         protected override void OnInit()
         {
-            // 根据条件编译符号自动检测平台
             PlatformType detectedType = DetectPlatform();
             Initialize(detectedType);
         }
@@ -63,20 +89,25 @@ namespace GameFramework.Platform
         {
             _currentPlatform = type;
 
-            switch (type)
+            if (type != PlatformType.Default && _registeredFactory != null)
             {
-                case PlatformType.WXMiniGame:
-                    InitWXMiniGame();
-                    break;
-                default:
-                    InitDefault();
-                    break;
+                _registeredFactory(this);
+            }
+            else
+            {
+                if (type != PlatformType.Default)
+                {
+                    GameLogger.LogWarning(TAG,
+                        $"No factory registered for {type}, falling back to Default.");
+                    _currentPlatform = PlatformType.Default;
+                }
+                InitDefault();
             }
 
             // 初始化音频
             _audio?.Initialize();
 
-            GameLogger.LogInfo(TAG, $"Platform initialized: {type}");
+            GameLogger.LogInfo(TAG, $"Platform initialized: {_currentPlatform}");
         }
 
         /// <summary>
@@ -129,22 +160,6 @@ namespace GameFramework.Platform
             _storage = new DefaultStorage();
             _fileSystem = new DefaultFileSystem();
             _audio = new DefaultAudio();
-        }
-
-        /// <summary>
-        /// 初始化微信小游戏平台实现
-        /// </summary>
-        private void InitWXMiniGame()
-        {
-#if WEIXINMINIGAME
-            _storage = new WXStorage();
-            _fileSystem = new WXFileSystem();
-            _audio = new WXAudio();
-#else
-            // SDK 未导入时回退到默认实现
-            GameLogger.LogWarning(TAG, "WEIXINMINIGAME symbol not defined, falling back to Default platform.");
-            InitDefault();
-#endif
         }
 
         /// <summary>

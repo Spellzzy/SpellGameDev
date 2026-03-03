@@ -87,7 +87,16 @@ namespace GameFramework.Editor
             string summary = "=== 配置完成 ===\n\n";
             summary += $"微信 SDK：{(sdkImported ? "已自动导入（本地包）" : "已检测到")}\n";
             summary += $"编译符号 {WX_DEFINE_SYMBOL}：{(symbolAdded ? "已添加" : "已存在")}\n";
-            summary += $"WebGL 平台：{(platformSwitched ? "已切换" : "当前已是 WebGL")}\n";
+
+            if (!platformSwitched && EditorUserBuildSettings.activeBuildTarget != BuildTarget.WebGL)
+            {
+                summary += "WebGL 平台：未安装 WebGL 模块，请通过 Unity Hub 安装后重试\n";
+            }
+            else
+            {
+                summary += $"WebGL 平台：{(platformSwitched ? "已切换" : "当前已是 WebGL")}\n";
+            }
+
             summary += "\nPlatformManager 将自动使用微信小游戏实现。";
 
             EditorUtility.DisplayDialog("配置结果", summary, "确定");
@@ -191,6 +200,18 @@ namespace GameFramework.Editor
             if (EditorUserBuildSettings.activeBuildTarget == BuildTarget.WebGL)
             {
                 EditorUtility.DisplayDialog("平台切换", "当前已是 WebGL 平台。", "确定");
+                return;
+            }
+
+            // 检测 WebGL 模块是否安装
+            if (!BuildPipeline.IsBuildTargetSupported(
+                    BuildTargetGroup.WebGL, BuildTarget.WebGL))
+            {
+                EditorUtility.DisplayDialog(
+                    "WebGL 模块未安装",
+                    "当前 Unity 未安装 WebGL Build Support 模块。\n\n" +
+                    "请通过 Unity Hub → Installs → Add Modules 安装。",
+                    "确定");
                 return;
             }
 
@@ -496,13 +517,38 @@ namespace GameFramework.Editor
         #region 平台切换
 
         /// <summary>
-        /// 切换到 WebGL 平台
+        /// 切换到 WebGL 平台。
+        /// 如果未安装 WebGL Build Support 模块，提示用户通过 Unity Hub 安装。
         /// </summary>
         private static bool SwitchToWebGL()
         {
             if (EditorUserBuildSettings.activeBuildTarget == BuildTarget.WebGL)
             {
                 UnityEngine.Debug.Log($"[{TAG}] Already on WebGL platform.");
+                return false;
+            }
+
+            // 检测 WebGL 模块是否已安装
+            bool webGLSupported = BuildPipeline.IsBuildTargetSupported(
+                BuildTargetGroup.WebGL, BuildTarget.WebGL);
+
+            if (!webGLSupported)
+            {
+                UnityEngine.Debug.LogWarning(
+                    $"[{TAG}] WebGL Build Support module is not installed.");
+
+                EditorUtility.DisplayDialog(
+                    "WebGL 模块未安装",
+                    "当前 Unity 未安装 WebGL Build Support 模块。\n\n" +
+                    "请按以下步骤安装：\n" +
+                    "1. 打开 Unity Hub\n" +
+                    "2. 点击 Installs 标签\n" +
+                    "3. 找到当前 Unity 版本，点击齿轮图标 → Add Modules\n" +
+                    "4. 勾选 \"WebGL Build Support\" 并安装\n" +
+                    "5. 安装完成后重启 Unity 再次运行本工具\n\n" +
+                    "SDK 导入和编译符号已配置完成，仅平台切换需要安装后执行。",
+                    "我知道了");
+
                 return false;
             }
 

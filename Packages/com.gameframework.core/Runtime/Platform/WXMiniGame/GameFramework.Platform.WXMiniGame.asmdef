@@ -1,0 +1,19 @@
+{
+    "name": "GameFramework.Platform.WXMiniGame",
+    "rootNamespace": "GameFramework.Platform",
+    "references": [
+        "GameFramework.Runtime",
+        "Wx"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "WEIXINMINIGAME"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

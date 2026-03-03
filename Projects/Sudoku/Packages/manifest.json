@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "com.qq.weixin.minigame": "file:../../../Packages/com.qq.weixin.minigame/",
     "com.gameframework.core": "file:../../../Packages/com.gameframework.core",
     "com.unity.2d.sprite": "1.0.0",
     "com.unity.2d.tilemap": "1.0.0",
