@@ -46,24 +46,29 @@ provider:
 Workspace/                              # 工作空间根目录
 ├── .codebuddy/rules/                   # AI 工作流规则（跨项目共用）
 ├── Workflow/Prompts/                   # Prompt 模板库（跨项目共用）
-├── Packages/                           # 共用框架（UPM 本地包）
-│   └── com.gameframework.core/        # GameFramework 包
-│       ├── package.json
-│       ├── Runtime/                    # 运行时代码
-│       │   ├── Core/                   # Singleton, MonoSingleton, GameManager
-│       │   ├── Event/                  # EventSystem
-│       │   ├── FSM/                    # 状态机
-│       │   ├── UI/                     # UIManager, UIPanel基类
-│       │   ├── Resource/              # 资源加载抽象
-│       │   ├── Pool/                   # 对象池
-│       │   ├── Audio/                  # 音频管理
-│       │   ├── Config/                 # 配置加载
-│       │   ├── Save/                   # 存档系统
-│       │   ├── Input/                  # 输入管理
-│       │   ├── Log/                    # 日志系统
-│       │   ├── Debug/                  # 调试工具
-│       │   └── Utils/                  # 工具类/扩展方法
-│       └── Editor/                     # 框架编辑器扩展
+├── Packages/                           # 共用框架 & 第三方 SDK（UPM 本地包）
+│   ├── com.gameframework.core/        # GameFramework 包
+│   │   ├── package.json
+│   │   ├── Runtime/                    # 运行时代码
+│   │   │   ├── Core/                   # Singleton, MonoSingleton, GameManager
+│   │   │   ├── Event/                  # EventSystem
+│   │   │   ├── FSM/                    # 状态机
+│   │   │   ├── UI/                     # UIManager, UIPanel基类
+│   │   │   ├── Resource/              # 资源加载抽象
+│   │   │   ├── Pool/                   # 对象池
+│   │   │   ├── Audio/                  # 音频管理
+│   │   │   ├── Config/                 # 配置加载
+│   │   │   ├── Save/                   # 存档系统（通过 Platform 层跨平台）
+│   │   │   ├── Platform/              # 跨平台抽象层（IPlatformStorage/FileSystem/Audio）
+│   │   │   ├── Input/                  # 输入管理
+│   │   │   ├── Log/                    # 日志系统
+│   │   │   ├── Debug/                  # 调试工具
+│   │   │   └── Utils/                  # 工具类/扩展方法
+│   │   └── Editor/                     # 框架编辑器扩展
+│   │       └── Platform/               # 微信小游戏一键配置工具
+│   │
+│   └── com.qq.weixin.minigame/        # 微信小游戏 SDK（预下载，按需引用）
+│
 └── Projects/                           # 各游戏项目
     └── <ProjectName>/                  # 单个 Unity 项目
         ├── Assets/

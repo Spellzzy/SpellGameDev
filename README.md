@@ -13,24 +13,32 @@
 
 ```
 SpellGameDev/
-├── Packages/                              # 共用框架（UPM 本地包）
-│   └── com.gameframework.core/           # GameFramework 核心包
-│       ├── package.json
-│       └── Runtime/
-│           ├── Core/          # Singleton, MonoSingleton, GameManager
-│           ├── Event/         # EventSystem 事件系统
-│           ├── FSM/           # 有限状态机
-│           ├── UI/            # UIManager, UIPanel, UILayer
-│           ├── Audio/         # 音频管理（BGM交叉渐变 + SFX对象池）
-│           ├── Resource/      # 可插拔资源加载（IResourceLoader）
-│           ├── Pool/          # GameObject 对象池
-│           ├── Save/          # 多槽位存档（JSON + 可选加密）
-│           ├── Config/        # JSON 配置加载
-│           ├── Scene/         # 异步场景管理
-│           ├── Input/         # 输入映射（键盘/虚拟轴/触屏）
-│           ├── Log/           # 分级日志（编译期控制）
-│           ├── Debug/         # 运行时调试控制台
-│           └── Utils/         # 扩展方法 + 定时器
+├── Packages/                              # 共用框架 & 第三方 SDK（UPM 本地包）
+│   ├── com.gameframework.core/           # GameFramework 核心包
+│   │   ├── package.json
+│   │   ├── Runtime/
+│   │   │   ├── Core/          # Singleton, MonoSingleton, GameManager
+│   │   │   ├── Event/         # EventSystem 事件系统
+│   │   │   ├── FSM/           # 有限状态机
+│   │   │   ├── UI/            # UIManager, UIPanel, UILayer
+│   │   │   ├── Audio/         # 音频管理（BGM交叉渐变 + SFX对象池）
+│   │   │   ├── Resource/      # 可插拔资源加载（IResourceLoader）
+│   │   │   ├── Pool/          # GameObject 对象池
+│   │   │   ├── Save/          # 多槽位存档（JSON + 可选加密）
+│   │   │   ├── Config/        # JSON 配置加载
+│   │   │   ├── Scene/         # 异步场景管理
+│   │   │   ├── Input/         # 输入映射（键盘/虚拟轴/触屏）
+│   │   │   ├── Platform/      # 跨平台抽象层（存储/文件/音频）
+│   │   │   ├── Log/           # 分级日志（编译期控制）
+│   │   │   ├── Debug/         # 运行时调试控制台
+│   │   │   └── Utils/         # 扩展方法 + 定时器
+│   │   └── Editor/
+│   │       └── Platform/      # 微信小游戏一键配置工具
+│   │
+│   └── com.qq.weixin.minigame/           # 微信小游戏 SDK（预下载，按需引用）
+│       ├── Editor/            # 转换工具面板
+│       ├── Runtime/           # WeChatWASM 运行时 API
+│       └── WebGLTemplates/    # WebGL 模板
 │
 ├── Projects/                              # 各游戏项目
 │   └── Sudoku/                           # 示例项目：数独游戏
@@ -65,7 +73,8 @@ SpellGameDev/
 | **AudioManager** | `MonoSingleton` | BGM 交叉渐变、SFX 对象池(16路)、3 级音量 |
 | **ResourceManager** | `Singleton` | 可插拔加载接口，默认 Resources.Load |
 | **PoolManager** | `MonoSingleton` | GameObject 对象池，预热 + 容量限制 |
-| **SaveManager** | `Singleton` | 5 槽位存档、JSON 序列化、XOR 加密 |
+| **PlatformManager** | `Singleton` | 跨平台抽象层（存储/文件系统/音频），自动检测平台 |
+| **SaveManager** | `Singleton` | 5 槽位存档、JSON 序列化、XOR 加密（通过 Platform 层跨平台） |
 | **ConfigManager** | `Singleton` | JSON 配置加载 + 缓存 |
 | **SceneManager** | `MonoSingleton` | 异步加载/卸载、进度回调 |
 | **InputManager** | `MonoSingleton` | 按键映射（主/副键）、虚拟轴、触屏支持 |
@@ -96,7 +105,15 @@ mkdir -p Projects/MyGame/Packages
 }
 ```
 
-### 3. 创建游戏入口
+### 3. 接入微信小游戏（可选）
+
+Unity 菜单 → **GameFramework → WX MiniGame → One-Click Setup**，一键完成：
+- 自动从工作空间引用预下载的微信 SDK（`com.qq.weixin.minigame`）
+- 添加 `WEIXINMINIGAME` 编译符号
+- 切换到 WebGL 平台
+- `PlatformManager` 自动切换到微信实现，业务代码零改动
+
+### 4. 创建游戏入口
 
 ```csharp
 using UnityEngine;
@@ -115,7 +132,7 @@ public class MyGameEntry : MonoBehaviour
 }
 ```
 
-### 4. 遵循三层架构
+### 5. 遵循三层架构
 
 ```csharp
 // Data — 纯数据
@@ -165,6 +182,25 @@ public class PlayerHpView : MonoBehaviour
 | **04 重构优化** | 代码臃肿/性能问题 | 诊断报告 + 重构方案 |
 | **05 内容资源** | 数值/关卡/PCG | 公式 + 算法 + 资源规格 |
 | **06 知识沉淀** | 功能完成后 | 架构决策记录 + 总结 |
+
+## 跨平台抽象层（Platform）
+
+框架内置了跨平台抽象层，使业务代码无需修改即可在不同平台运行：
+
+| 接口 | 职责 | Default 实现 | WX 实现 |
+|------|------|-------------|---------|
+| `IPlatformStorage` | 键值对存储 | PlayerPrefs | WX.StorageSetSync |
+| `IPlatformFileSystem` | 文件读写 | System.IO | WX.FileSystemManager |
+| `IPlatformAudio` | 音频播放 | Unity AudioSource | WX.InnerAudioContext |
+
+**PlatformManager** 在 `GameManager` 初始化序列中自动根据编译符号选择实现，也支持通过 `SetStorage()`/`SetFileSystem()`/`SetAudio()` 手动注入自定义实现。
+
+### 微信小游戏接入流程
+
+1. Unity 菜单 → **GameFramework → WX MiniGame → One-Click Setup**
+2. 脚本自动：导入 SDK → 添加 `WEIXINMINIGAME` 编译符号 → 切换 WebGL
+3. `PlatformManager` 自动激活微信实现，`SaveManager` 等上层模块无感切换
+4. 开发阶段切回：**Remove Define Symbol** + **Switch to Standalone**
 
 ## 示例项目：数独
 

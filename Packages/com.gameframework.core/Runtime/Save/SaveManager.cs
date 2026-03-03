@@ -1,17 +1,18 @@
 using System;
-using System.IO;
 using System.Text;
 using UnityEngine;
 using GameFramework.Core;
 using GameFramework.Event;
 using GameFramework.Log;
+using GameFramework.Platform;
 
 namespace GameFramework.Save
 {
     /// <summary>
     /// 存档管理器。
-    /// 支持多槽位存档、JSON序列化、可选AES加密。
-    /// 存档路径：Application.persistentDataPath/Saves/
+    /// 支持多槽位存档、JSON序列化、可选XOR加密。
+    /// 通过 PlatformManager.FileSystem 实现跨平台文件读写，
+    /// 无需关心底层是 System.IO 还是微信文件系统。
     /// </summary>
     public class SaveManager : Singleton<SaveManager>
     {
@@ -39,13 +40,24 @@ namespace GameFramework.Save
         /// </summary>
         public int MaxSlots { get; set; } = 5;
 
-        private string SaveDirectory => Path.Combine(Application.persistentDataPath, SAVE_DIR);
+        private IPlatformFileSystem _fs;
+
+        private string SaveDirectory
+        {
+            get
+            {
+                string basePath = _fs?.PersistentDataPath ?? Application.persistentDataPath;
+                return $"{basePath}/{SAVE_DIR}";
+            }
+        }
 
         protected override void OnInit()
         {
-            if (!Directory.Exists(SaveDirectory))
+            _fs = PlatformManager.Instance.FileSystem;
+
+            if (!_fs.DirectoryExists(SaveDirectory))
             {
-                Directory.CreateDirectory(SaveDirectory);
+                _fs.CreateDirectory(SaveDirectory);
             }
             GameLogger.LogInfo(TAG, $"SaveManager initialized. Path: {SaveDirectory}");
         }
@@ -73,7 +85,7 @@ namespace GameFramework.Save
                     json = Encrypt(json);
                 }
 
-                File.WriteAllText(path, json, Encoding.UTF8);
+                _fs.WriteAllText(path, json);
                 GameLogger.LogInfo(TAG, $"Data saved to slot {slot}: {path}");
                 EventSystem.Instance.Publish(GameEvents.SAVE_COMPLETE, this);
                 return true;
@@ -98,7 +110,7 @@ namespace GameFramework.Save
 
             string path = GetSavePath(slot, fileName);
 
-            if (!File.Exists(path))
+            if (!_fs.FileExists(path))
             {
                 GameLogger.LogWarning(TAG, $"Save file not found: {path}");
                 return null;
@@ -106,7 +118,7 @@ namespace GameFramework.Save
 
             try
             {
-                string json = File.ReadAllText(path, Encoding.UTF8);
+                string json = _fs.ReadAllText(path);
 
                 if (EnableEncryption)
                 {
@@ -131,7 +143,7 @@ namespace GameFramework.Save
         public bool HasSave(int slot = -1, string fileName = null)
         {
             if (slot < 0) slot = CurrentSlot;
-            return File.Exists(GetSavePath(slot, fileName));
+            return _fs.FileExists(GetSavePath(slot, fileName));
         }
 
         /// <summary>
@@ -142,9 +154,9 @@ namespace GameFramework.Save
             if (slot < 0) slot = CurrentSlot;
             string path = GetSavePath(slot, fileName);
 
-            if (File.Exists(path))
+            if (_fs.FileExists(path))
             {
-                File.Delete(path);
+                _fs.DeleteFile(path);
                 GameLogger.LogInfo(TAG, $"Save deleted: {path}");
                 return true;
             }
@@ -156,10 +168,10 @@ namespace GameFramework.Save
         /// </summary>
         public void DeleteAllSaves()
         {
-            if (Directory.Exists(SaveDirectory))
+            if (_fs.DirectoryExists(SaveDirectory))
             {
-                Directory.Delete(SaveDirectory, true);
-                Directory.CreateDirectory(SaveDirectory);
+                _fs.DeleteDirectory(SaveDirectory, true);
+                _fs.CreateDirectory(SaveDirectory);
                 GameLogger.LogInfo(TAG, "All saves deleted.");
             }
         }
@@ -170,7 +182,7 @@ namespace GameFramework.Save
         private string GetSavePath(int slot, string fileName = null)
         {
             string name = string.IsNullOrEmpty(fileName) ? $"save_slot{slot}" : fileName;
-            return Path.Combine(SaveDirectory, name + SAVE_EXT);
+            return $"{SaveDirectory}/{name}{SAVE_EXT}";
         }
 
         #region 简单XOR加密（可替换为AES）
@@ -200,6 +212,7 @@ namespace GameFramework.Save
 
         public override void Dispose()
         {
+            _fs = null;
             base.Dispose();
         }
     }

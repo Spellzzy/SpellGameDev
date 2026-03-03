@@ -5,6 +5,7 @@ using GameFramework.Resource;
 using GameFramework.Config;
 using GameFramework.Save;
 using GameFramework.Log;
+using GameFramework.Platform;
 
 namespace GameFramework.Core
 {
@@ -41,6 +42,10 @@ namespace GameFramework.Core
             // ── P0: 核心基础 ──
             _ = EventSystem.Instance;
             GameLogger.LogInfo(TAG, "EventSystem ready.");
+
+            // ── P0.5: 平台抽象层（必须在 SaveManager/AudioManager 之前初始化）──
+            _ = PlatformManager.Instance;
+            GameLogger.LogInfo(TAG, $"PlatformManager ready. Platform: {PlatformManager.Instance.CurrentPlatform}");
 
             // ── P1: 流程骨架 ──
             _ = GameStateManager.Instance;
@@ -108,6 +113,7 @@ namespace GameFramework.Core
             ConfigManager.Instance.Dispose();
             ResourceManager.Instance.Dispose();
             GameStateManager.Instance.Dispose();
+            PlatformManager.Instance.Dispose();
             EventSystem.Instance.Dispose();
             IsInitialized = false;
         }
