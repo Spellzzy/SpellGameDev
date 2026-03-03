@@ -202,6 +202,16 @@ public class PlayerHpView : MonoBehaviour
 3. `PlatformManager` 自动激活微信实现，`SaveManager` 等上层模块无感切换
 4. 开发阶段切回：**Remove Define Symbol** + **Switch to Standalone**
 
+### 微信小游戏构建发布
+
+1. Unity 菜单 → **GameFramework → WX MiniGame → Build MiniGame (Full)**（或 Dev 模式）
+2. 首次构建时若导出路径未配置，会弹出对话框：
+   - **使用默认** → 导出到项目根目录下的 `WXExport/`
+   - **自定义** → 选择其他目录
+   - 路径自动持久化到 SDK 配置，后续构建不再弹窗
+3. 构建完成后，产物在导出目录的 `minigame/` 子目录
+4. 用**微信开发者工具**打开 `minigame/` 目录即可预览/上传
+
 ## 示例项目：数独
 
 `Projects/Sudoku/` 是一个完整的数独游戏实现，展示了框架的使用方式：

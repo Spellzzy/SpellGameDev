@@ -68,3 +68,13 @@ Projects/*/Packages/packages-lock.json
 # =====================
 Assets/AssetStoreTools*
 Assets/Plugins/Editor/JetBrains*
+
+# =====================
+# WeChat MiniGame SDK Generated
+# =====================
+**/WX-WASM-SDK-V2/
+**/WX-WASM-SDK-V2.meta
+**/WebGLTemplates/
+**/WebGLTemplates.meta
+**/TextToolDatas/
+**/WXExport/
