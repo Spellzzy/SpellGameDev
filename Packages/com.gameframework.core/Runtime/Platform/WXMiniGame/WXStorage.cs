@@ -70,9 +70,7 @@ namespace GameFramework.Platform
         /// </summary>
         public bool HasKey(string key)
         {
-            // 微信 SDK 没有直接的 HasKey，通过尝试获取判断
-            string result = WX.StorageGetStringSync(key, "");
-            return !string.IsNullOrEmpty(result);
+            return WX.StorageHasKeySync(key);
         }
 
         /// <summary>
@@ -80,7 +78,7 @@ namespace GameFramework.Platform
         /// </summary>
         public void DeleteKey(string key)
         {
-            WX.StorageRemoveSync(key);
+            WX.StorageDeleteKeySync(key);
         }
 
         /// <summary>
@@ -88,7 +86,7 @@ namespace GameFramework.Platform
         /// </summary>
         public void DeleteAll()
         {
-            WX.StorageClearSync();
+            WX.StorageDeleteAllSync();
         }
 
         /// <summary>
